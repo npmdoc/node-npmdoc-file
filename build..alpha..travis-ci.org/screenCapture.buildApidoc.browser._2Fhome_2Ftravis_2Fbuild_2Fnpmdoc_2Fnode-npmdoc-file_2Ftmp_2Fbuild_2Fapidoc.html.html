@@ -1,0 +1,517 @@
+<html><head></head><body><div class="apidocDiv">
+<style>
+/*csslint
+*/
+.apidocDiv {
+    background: #fff;
+    font-family: Arial, Helvetica, sans-serif;
+}
+.apidocDiv a[href] {
+    color: #33f;
+    font-weight: bold;
+    text-decoration: none;
+}
+.apidocDiv a[href]:hover {
+    text-decoration: underline;
+}
+.apidocCodeCommentSpan {
+    background: #bbf;
+    color: #000;
+    display: block;
+}
+.apidocCodeKeywordSpan {
+    color: #d00;
+    font-weight: bold;
+}
+.apidocCodePre {
+    background: #eef;
+    border: 1px solid;
+    color: #777;
+    padding: 5px;
+    white-space: pre-wrap;
+}
+.apidocFooterDiv {
+    margin-top: 20px;
+    text-align: center;
+}
+.apidocModuleLi {
+    margin-top: 10px;
+}
+.apidocSectionDiv {
+    border-top: 1px solid;
+    margin-top: 20px;
+}
+.apidocSignatureSpan {
+    color: #777;
+    font-weight: bold;
+}
+</style>
+<h1>api documentation for
+    <a href="https://github.com/aconbere/node-file-utils">file (v0.2.2)</a>
+</h1>
+<h4>Higher level path and file manipulation functions.</h4>
+<div class="apidocSectionDiv"><a href="#apidoc.tableOfContents" id="apidoc.tableOfContents"><h1>table of contents</h1></a><ol>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.file">module file</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.mkdirs">
+            function <span class="apidocSignatureSpan">file.</span>mkdirs
+            <span class="apidocSignatureSpan">(_path, mode, callback)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.mkdirsSync">
+            function <span class="apidocSignatureSpan">file.</span>mkdirsSync
+            <span class="apidocSignatureSpan">(_path, mode)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.walk">
+            function <span class="apidocSignatureSpan">file.</span>walk
+            <span class="apidocSignatureSpan">(start, callback)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.walkSync">
+            function <span class="apidocSignatureSpan">file.</span>walkSync
+            <span class="apidocSignatureSpan">(start, callback)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <span class="apidocSignatureSpan">object <span class="apidocSignatureSpan">file.</span>path</span>
+
+        </li>
+
+    </ol></li>
+
+    <li class="apidocModuleLi"><a href="#apidoc.module.file.path">module file.path</a><ol>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.path.abspath">
+            function <span class="apidocSignatureSpan">file.path.</span>abspath
+            <span class="apidocSignatureSpan">(to)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.path.join">
+            function <span class="apidocSignatureSpan">file.path.</span>join
+            <span class="apidocSignatureSpan">(head, tail)</span>
+            </a>
+
+        </li>
+
+        <li>
+
+            <a class="apidocElementLiA" href="#apidoc.element.file.path.relativePath">
+            function <span class="apidocSignatureSpan">file.path.</span>relativePath
+            <span class="apidocSignatureSpan">(base, compare)</span>
+            </a>
+
+        </li>
+
+    </ol></li>
+
+</ol></div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.file" id="apidoc.module.file">module file</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.file.mkdirs" id="apidoc.element.file.mkdirs">
+        function <span class="apidocSignatureSpan">file.</span>mkdirs
+        <span class="apidocSignatureSpan">(_path, mode, callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">mkdirs = function (_path, mode, callback) {
+  _path = exports.path.abspath(_path);
+
+  var dirs = _path.split(path.sep);
+  var walker = [dirs.shift()];
+
+  // walk
+  // @ds:  A list of directory names
+  // @acc: An accumulator of walked dirs
+  // @m:   The mode
+  // @cb:  The callback
+  var walk = function (ds, acc, m, cb) {
+    if (ds.length &gt; 0) {
+      var d = ds.shift();
+
+      acc.push(d);
+      var dir = acc.join(path.sep);
+
+      // look for dir on the fs, if it doesn't exist then create it, and
+      // continue our walk, otherwise if it's a file, we have a name
+      // collision, so exit.
+      fs.stat(dir, function (err, stat) {
+        // if the directory doesn't exist then create it
+        if (err) {
+          // 2 means it's wasn't there
+          if (err.errno == 2 || err.errno == 34) {
+            fs.mkdir(dir, m, function (erro) {
+              if (erro &amp;&amp; erro.errno != 17 &amp;&amp; erro.errno != 34) {
+                return cb(erro);
+              } else {
+                return walk(ds, acc, m, cb);
+              }
+            });
+          } else {
+            return cb(err);
+          }
+        } else {
+          if (stat.isDirectory()) {
+            return walk(ds, acc, m, cb);
+          } else {
+            return cb(new Error("Failed to mkdir " + dir + ": File exists\n"));
+          }
+        }
+      });
+    } else {
+      return cb();
+    }
+  };
+  return walk(dirs, walker, mode, callback);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+
+### file.walkSync(start, callback)
+
+Synchronus version of file.walk, calling callback for each directory, passing in (dirPath, dirs, files).
+
+
+### file.<span class="apidocCodeKeywordSpan">mkdirs</span>(path, mode, callback)
+
+Makes all the directories in a path. (analgous to mkdir -P) For example given a path like "test/this/path" in an empty
+ directory, mkdirs would make the directories "test", "this" and "path".
+
+
+### file.mkdirsSync(path, mode)
+
+Like file.mkdirs but synchronous.
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.file.mkdirsSync" id="apidoc.element.file.mkdirsSync">
+        function <span class="apidocSignatureSpan">file.</span>mkdirsSync
+        <span class="apidocSignatureSpan">(_path, mode)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">mkdirsSync = function (_path, mode) {
+  if (_path[0] !== path.sep) {
+    _path = path.join(process.cwd(), _path)
+  }
+
+  var dirs = _path.split(path.sep);
+  var walker = [dirs.shift()];
+
+  dirs.reduce(function (acc, d) {
+    acc.push(d);
+    var dir = acc.join(path.sep);
+
+    try {
+      var stat = fs.statSync(dir);
+      if (!stat.isDirectory()) {
+        throw "Failed to mkdir " + dir + ": File exists";
+      }
+    } catch (err) {
+      fs.mkdirSync(dir, mode);
+    }
+    return acc;
+  }, walker);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+
+### file.mkdirs(path, mode, callback)
+
+Makes all the directories in a path. (analgous to mkdir -P) For example given a path like "test/this/path" in an empty
+ directory, mkdirs would make the directories "test", "this" and "path".
+
+
+### file.<span class="apidocCodeKeywordSpan">mkdirsSync</span>(path, mode)
+
+Like file.mkdirs but synchronous.
+
+
+### file.path.abspath(path)
+
+Expands ".", "..", "~" and non root paths to their full absolute path. Relative paths default to being
+ children of the current working directory.
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.file.walk" id="apidoc.element.file.walk">
+        function <span class="apidocSignatureSpan">file.</span>walk
+        <span class="apidocSignatureSpan">(start, callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">walk = function (start, callback) {
+  fs.lstat(start, function (err, stat) {
+    if (err) { return callback(err) }
+    if (stat.isDirectory()) {
+
+      fs.readdir(start, function (err, files) {
+        var coll = files.reduce(function (acc, i) {
+          var abspath = path.join(start, i);
+
+          if (fs.statSync(abspath).isDirectory()) {
+            exports.walk(abspath, callback);
+            acc.dirs.push(abspath);
+          } else {
+            acc.names.push(abspath);
+          }
+
+          return acc;
+        }, {"names": [], "dirs": []});
+
+        return callback(null, start, coll.dirs, coll.names);
+      });
+    } else {
+      return callback(new Error("path: " + start + " is not a directory"));
+    }
+  });
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+&lt;pre&gt;
+  var file = require("file");
+&lt;/pre&gt;
+
+## API
+
+### file.<span class="apidocCodeKeywordSpan">walk</span>(start, callback)
+
+Navigates a file tree, calling callback for each directory, passing in (null, dirPath, dirs, files).
+
+
+### file.walkSync(start, callback)
+
+Synchronus version of file.walk, calling callback for each directory, passing in (dirPath, dirs, files).
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.file.walkSync" id="apidoc.element.file.walkSync">
+        function <span class="apidocSignatureSpan">file.</span>walkSync
+        <span class="apidocSignatureSpan">(start, callback)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">walkSync = function (start, callback) {
+  var stat = fs.statSync(start);
+
+  if (stat.isDirectory()) {
+    var filenames = fs.readdirSync(start);
+
+    var coll = filenames.reduce(function (acc, name) {
+      var abspath = path.join(start, name);
+
+      if (fs.statSync(abspath).isDirectory()) {
+        acc.dirs.push(name);
+      } else {
+        acc.names.push(name);
+      }
+
+      return acc;
+    }, {"names": [], "dirs": []});
+
+    callback(start, coll.dirs, coll.names);
+
+    coll.dirs.forEach(function (d) {
+      var abspath = path.join(start, d);
+      exports.walkSync(abspath, callback);
+    });
+
+  } else {
+    throw new Error("path: " + start + " is not a directory");
+  }
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+## API
+
+### file.walk(start, callback)
+
+Navigates a file tree, calling callback for each directory, passing in (null, dirPath, dirs, files).
+
+
+### file.<span class="apidocCodeKeywordSpan">walkSync</span>(start, callback)
+
+Synchronus version of file.walk, calling callback for each directory, passing in (dirPath, dirs, files).
+
+
+### file.mkdirs(path, mode, callback)
+
+Makes all the directories in a path. (analgous to mkdir -P) For example given a path like "test/this/path" in an empty
+ directory, mkdirs would make the directories "test", "this" and "path".
+...</pre></li>
+    </ul>
+
+
+
+
+</div>
+
+<div class="apidocSectionDiv">
+<h1><a href="#apidoc.module.file.path" id="apidoc.module.file.path">module file.path</a></h1>
+
+
+    <h2>
+        <a href="#apidoc.element.file.path.abspath" id="apidoc.element.file.path.abspath">
+        function <span class="apidocSignatureSpan">file.path.</span>abspath
+        <span class="apidocSignatureSpan">(to)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">abspath = function (to) {
+  var from;
+  switch (to.charAt(0)) {
+    case "~": from = process.env.HOME; to = to.substr(1); break
+    case path.sep: from = ""; break
+    default : from = process.cwd(); break
+  }
+  return path.join(from, to);
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+
+### file.mkdirsSync(path, mode)
+
+Like file.mkdirs but synchronous.
+
+
+### file.path.<span class="apidocCodeKeywordSpan">abspath</span>(path)
+
+Expands ".", "..", "~" and non root paths to their full absolute path. Relative paths default to being
+ children of the current working directory.
+
+
+### file.path.relativePath(root, fullPath)
+
+Given a root path, and a fullPath attempts to diff between the two to give us an acurate path relative to root.
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.file.path.join" id="apidoc.element.file.path.join">
+        function <span class="apidocSignatureSpan">file.path.</span>join
+        <span class="apidocSignatureSpan">(head, tail)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">join = function (head, tail) {
+  if (head == "") {
+    return tail;
+  } else {
+    return path.join(head, tail);
+  }
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+
+### file.path.relativePath(root, fullPath)
+
+Given a root path, and a fullPath attempts to diff between the two to give us an acurate path relative to root.
+
+
+### file.path.<span class="apidocCodeKeywordSpan">join</span>(head, tail)
+
+Just like path.join but haves a little more sanely when give a head equal to "". file.path.join("", "tail
+") returns "tail", path.join("", "tail") returns "/tail"
+...</pre></li>
+    </ul>
+
+
+
+    <h2>
+        <a href="#apidoc.element.file.path.relativePath" id="apidoc.element.file.path.relativePath">
+        function <span class="apidocSignatureSpan">file.path.</span>relativePath
+        <span class="apidocSignatureSpan">(base, compare)</span>
+        </a>
+    </h2>
+    <ul>
+    <li>description and source-code<pre class="apidocCodePre">relativePath = function (base, compare) {
+  base = base.split(path.sep);
+  compare = compare.split(path.sep);
+
+  if (base[0] == "") {
+    base.shift();
+  }
+
+  if (compare[0] == "") {
+    compare.shift();
+  }
+
+  var l = compare.length;
+
+  for (var i = 0; i &lt; l; i++) {
+    if (!base[i] || (base[i] != compare[i])) {
+      return compare.slice(i).join(path.sep);
+    }
+  }
+
+  return ""
+}</pre></li>
+    <li>example usage<pre class="apidocCodePre">...
+
+
+### file.path.abspath(path)
+
+Expands ".", "..", "~" and non root paths to their full absolute path. Relative paths default to being
+ children of the current working directory.
+
+
+### file.path.<span class="apidocCodeKeywordSpan">relativePath</span>(root, fullPath)
+
+Given a root path, and a fullPath attempts to diff between the two to give us an acurate path relative to root.
+
+
+### file.path.join(head, tail)
+
+Just like path.join but haves a little more sanely when give a head equal to "". file.path.join("", "tail
+") returns "tail", path.join("", "tail") returns "/tail"
+...</pre></li>
+    </ul>
+
+
+</div>
+
+<div class="apidocFooterDiv">
+    [ this document was created with
+    <a href="https://github.com/kaizhu256/node-utility2" target="_blank">utility2</a>
+    ]
+</div>
+</div>
+</body></html>
